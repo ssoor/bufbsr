@@ -3,6 +3,8 @@ package codegenerator
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"os/exec"
 
 	"google.golang.org/protobuf/proto"
@@ -19,27 +21,24 @@ type Plugin struct {
 func (p *Plugin) Generate(ctx context.Context, req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
 	in, err := proto.Marshal(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshaling plugin request: %w", err)
 	}
 
 	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
 
 	cmd := exec.CommandContext(ctx, p.Path)
 
 	cmd.Stdin = bytes.NewReader(in)
-	cmd.Stderr = stderr
+	cmd.Stderr = io.Discard
 	cmd.Stdout = stdout
 
-	// TODO: handle errors, if it's a *exec.ExitError, read stderr and return it?
-	icerr := cmd.Run()
-	if icerr != nil {
+	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
 
 	res := &pluginpb.CodeGeneratorResponse{}
 	if err := proto.Unmarshal(stdout.Bytes(), res); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshaling plugin response: %w", err)
 	}
 
 	return res, nil

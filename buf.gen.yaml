@@ -1,0 +1,22 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/CGA1123/codegenerator/gen
+
+inputs:
+  - module: buf.build/bufbuild/buf
+    types:
+      - buf.alpha.registry.v1alpha1.CodeGenerationService
+
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen
+    opt:
+      - paths=source_relative
+  - remote: buf.build/connectrpc/go
+    out: gen
+    opt:
+      - paths=source_relative

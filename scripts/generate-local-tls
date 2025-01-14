@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Create some 
+
+OUT_DIR=".local/certstrap"
+
+if ! command -v certstrap > /dev/null; then
+  echo "couldn't find certstrap -- go install github.com/square/certstrap@latest"
+  exit 1
+fi
+
+set -euo pipefail
+
+if [[ ! -f "${OUT_DIR}/codegenerator-ca.crt" ]]; then
+  certstrap --depot-path "${OUT_DIR}" init --common-name codegenerator-ca
+fi
+
+if [[ ! -f "${OUT_DIR}/codegenerator.crt" ]]; then
+  certstrap --depot-path "${OUT_DIR}" request-cert --common-name codegenerator -domain "lvh.me"
+  certstrap --depot-path "${OUT_DIR}" sign codegenerator --CA codegenerator-ca
+fi
+
+echo "Adding generated ca.crt to login keychain, this needs sudo access..."
+echo
+echo "PRESS ANY KEY"
+read
+
+sudo security add-trusted-cert -d -r trustRoot -p ssl -k ~/Library/Keychains/login.keychain "${OUT_DIR}/codegenerator-ca.crt"
+

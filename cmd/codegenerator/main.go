@@ -29,8 +29,8 @@ func main() {
 	// LB handles it.
 	err := http.ListenAndServeTLS(
 		"localhost:1123",
-		".local/tls/server.crt",
-		".local/tls/server.key",
+		".local/certstrap/codegenerator.crt",
+		".local/certstrap/codegenerator.key",
 		// Use h2c so we can serve HTTP/2 without TLS.
 		h2c.NewHandler(mux, &http2.Server{}),
 	)

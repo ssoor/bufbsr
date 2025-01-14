@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -31,6 +32,7 @@ func (p *Plugin) Generate(ctx context.Context, req *pluginpb.CodeGeneratorReques
 	cmd.Stdin = bytes.NewReader(in)
 	cmd.Stderr = io.Discard
 	cmd.Stdout = stdout
+	cmd.Dir = filepath.Dir(p.Path)
 
 	if err := cmd.Run(); err != nil {
 		return nil, err

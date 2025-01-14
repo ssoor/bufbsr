@@ -3,6 +3,7 @@ package codegenerator
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -27,6 +28,8 @@ func buildLocalRegistry(path string) (*Registry, error) {
 		return nil, fmt.Errorf("expanding path: %w", err)
 	}
 
+	slog.Info("building local registry", "path", path)
+
 	registry := map[string]map[string]map[string]*Plugin{}
 
 	owners, err := os.ReadDir(path)
@@ -36,6 +39,7 @@ func buildLocalRegistry(path string) (*Registry, error) {
 
 	for _, owner := range owners {
 		ownerName := owner.Name()
+
 		if !owner.IsDir() {
 			return nil, fmt.Errorf("expected %s/%s to be a directory", path, ownerName)
 		}
@@ -61,6 +65,7 @@ func buildLocalRegistry(path string) (*Registry, error) {
 
 			for _, version := range versions {
 				versionName := version.Name()
+
 				if !semverRegex.MatchString(versionName) {
 					return nil, fmt.Errorf("incorrect version path: %s", filepath.Join(pluginName, versionName))
 				}
@@ -79,6 +84,8 @@ func buildLocalRegistry(path string) (*Registry, error) {
 				if err != nil {
 					return nil, fmt.Errorf("stating binary for %s/%s@%s: %w", ownerName, pluginName, versionName, err)
 				}
+
+				slog.Info("found plugin", "owner", ownerName, "plugin", pluginName, "version", versionName, "name", fmt.Sprintf("%s/%s:%s", ownerName, pluginName, versionName))
 
 				execable := (info.Mode().Perm() & 0111) != 0
 				if !execable {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	v1alpha1 "github.com/CGA1123/codegenerator/gen/buf/alpha/registry/v1alpha1"
 )
@@ -57,6 +58,9 @@ func buildLocalRegistry(path string) (*Registry, error) {
 
 	for _, owner := range owners {
 		ownerName := owner.Name()
+		if isDotFile(owner) {
+			continue
+		}
 
 		if !owner.IsDir() {
 			return nil, fmt.Errorf("expected %s/%s to be a directory", path, ownerName)
@@ -68,6 +72,10 @@ func buildLocalRegistry(path string) (*Registry, error) {
 		}
 
 		for _, plugin := range plugins {
+			if isDotFile(plugin) {
+				continue
+			}
+
 			pluginName := plugin.Name()
 
 			if !plugin.IsDir() {
@@ -82,6 +90,10 @@ func buildLocalRegistry(path string) (*Registry, error) {
 			}
 
 			for _, version := range versions {
+				if isDotFile(version) {
+					continue
+				}
+
 				versionName := version.Name()
 
 				if !semverRegex.MatchString(versionName) {
@@ -132,6 +144,10 @@ func buildLocalRegistry(path string) (*Registry, error) {
 	}
 
 	return &Registry{registry: registry}, nil
+}
+
+func isDotFile(f os.DirEntry) bool {
+	return strings.HasPrefix(f.Name(), ".")
 }
 
 // Registry is the container which points to all available plugins.

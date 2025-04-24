@@ -1,4 +1,4 @@
-package codegenerator
+package local
 
 import (
 	"fmt"
@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	v1alpha1 "github.com/CGA1123/codegenerator/gen/buf/alpha/registry/v1alpha1"
+	"github.com/CGA1123/codegenerator/plugin"
+	"github.com/CGA1123/codegenerator/plugin/local"
 )
 
 // LocalRegistry reads the available plugins from the folder structure at
@@ -49,7 +51,7 @@ func buildLocalRegistry(path string) (*Registry, error) {
 
 	slog.Info("building local registry", "path", path)
 
-	registry := map[string]map[string]map[string]*Plugin{}
+	registry := map[string]map[string]map[string]plugin.Plugin{}
 
 	owners, err := os.ReadDir(path)
 	if err != nil {
@@ -71,14 +73,14 @@ func buildLocalRegistry(path string) (*Registry, error) {
 			return nil, fmt.Errorf("listing plugins for %s: %w", ownerName, err)
 		}
 
-		for _, plugin := range plugins {
-			if isDotFile(plugin) {
+		for _, pluginFs := range plugins {
+			if isDotFile(pluginFs) {
 				continue
 			}
 
-			pluginName := plugin.Name()
+			pluginName := pluginFs.Name()
 
-			if !plugin.IsDir() {
+			if !pluginFs.IsDir() {
 				return nil, fmt.Errorf("expected %s/%s/%s to be a directory", path, ownerName, pluginName)
 			}
 
@@ -124,18 +126,19 @@ func buildLocalRegistry(path string) (*Registry, error) {
 					))
 				}
 
-				p := &Plugin{
+				p := &local.Plugin{
+					Cwd:     filepath.Join(path, ownerName, pluginName, versionName),
 					Path:    filepath.Join(path, ownerName, pluginName, versionName, pluginName),
 					Name:    pluginName,
 					Version: versionName,
 				}
 
 				if _, ok := registry[ownerName]; !ok {
-					registry[ownerName] = map[string]map[string]*Plugin{}
+					registry[ownerName] = make(map[string]map[string]plugin.Plugin)
 				}
 
 				if _, ok := registry[pluginName]; !ok {
-					registry[ownerName][pluginName] = map[string]*Plugin{}
+					registry[ownerName][pluginName] = map[string]plugin.Plugin{}
 				}
 
 				registry[ownerName][pluginName][versionName] = p
@@ -152,14 +155,14 @@ func isDotFile(f os.DirEntry) bool {
 
 // Registry is the container which points to all available plugins.
 type Registry struct {
-	registry map[string]map[string]map[string]*Plugin
+	registry map[string]map[string]map[string]plugin.Plugin
 }
 
 // Get gets a plugin, if registered.
 //
 // * Version must be set.
 // * Revision must not be set.
-func (r *Registry) Get(ref *v1alpha1.CuratedPluginReference) (*Plugin, error) {
+func (r *Registry) Get(ref *v1alpha1.CuratedPluginReference) (plugin.Plugin, error) {
 	if ref.GetRevision() != 0 {
 		return nil, fmt.Errorf("setting version revision is not supported: got revision %v", ref.GetRevision())
 	}

@@ -1,12 +1,10 @@
-package codegenerator
+package local
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os/exec"
-	"path/filepath"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -14,7 +12,9 @@ import (
 
 // Plugin wraps a plugin binary for local execution.
 type Plugin struct {
+	Cwd     string
 	Path    string
+	Args    []string
 	Name    string
 	Version string
 }
@@ -26,15 +26,17 @@ func (p *Plugin) Generate(ctx context.Context, req *pluginpb.CodeGeneratorReques
 	}
 
 	stdout := &bytes.Buffer{}
+	errout := &bytes.Buffer{}
 
-	cmd := exec.CommandContext(ctx, p.Path)
+	cmd := exec.CommandContext(ctx, p.Path, p.Args...)
 
 	cmd.Stdin = bytes.NewReader(in)
-	cmd.Stderr = io.Discard
+	cmd.Stderr = errout // io.Discard
 	cmd.Stdout = stdout
-	cmd.Dir = filepath.Dir(p.Path)
+	cmd.Dir = p.Cwd
 
 	if err := cmd.Run(); err != nil {
+		fmt.Println("execute plugin failed, errout:", errout)
 		return nil, err
 	}
 

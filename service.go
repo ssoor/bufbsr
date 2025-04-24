@@ -13,13 +13,14 @@ import (
 	imagev1 "github.com/CGA1123/codegenerator/gen/buf/alpha/image/v1"
 	v1alpha1 "github.com/CGA1123/codegenerator/gen/buf/alpha/registry/v1alpha1"
 	"github.com/CGA1123/codegenerator/gen/buf/alpha/registry/v1alpha1/registryv1alpha1connect"
+	"github.com/CGA1123/codegenerator/registry"
 	"github.com/bufbuild/protoplugin/protopluginutil"
 )
 
 var _ registryv1alpha1connect.CodeGenerationServiceHandler = (*Service)(nil)
 
 type Service struct {
-	Registry *Registry
+	Registry registry.Registry
 }
 
 func (s *Service) GenerateCode(
